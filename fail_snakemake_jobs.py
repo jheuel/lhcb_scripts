@@ -17,12 +17,16 @@ failFileRegex = re.compile(r'\|\| \(touch "(.*\.jobfailed)"')
 jobs = []
 failFiles = []
 for job in schedd.xquery(projection=['ClusterId', 'ProcId', 'Args']):
-    jobs.append('{}.{}'.format(job['ClusterId'], job['ProcId']))
-    with open(job['Args']) as f:
-        s = f.read()
-        finds = failFileRegex.findall(s)
-        for i in finds:
-            failFiles.append(i)
+    try:
+        with open(job['Args']) as f:
+            s = f.read()
+            finds = failFileRegex.findall(s)
+            for i in finds:
+                failFiles.append(i)
+        jobs.append('{}.{}'.format(job['ClusterId'], job['ProcId']))
+    except IOError as e:
+        print(e)
+        print('Skip job')
 
 print(jobs)
 with schedd.transaction() as txn:
