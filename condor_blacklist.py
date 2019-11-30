@@ -36,15 +36,18 @@ for job in schedd.xquery(projection=['ClusterId', 'ProcId', 'JobStatus', 'HoldRe
             print('could not parse host')
             exit(1)
         host = splits[1]
-        newRequirements = f"({job['Requirements']}) && (machine != '{host}')"
+        req = job['Requirements']
+        newRequirements = '({req}) && machine != "{host}"'.format(
+            req=req,
+            host=host)
 
         if cfg.verbose:
-            print(f'old requirements: {job["Requirements"]}')
-            print(f'new requirements: {newRequirements}')
+            print('old requirements: {}'.format(req))
+            print('new requirements: {}'.format(newRequirements))
 
-        j = [f'{job["ClusterId"]}.{job["ProcId"]}']
+        j = ['{}.{}'.format(job['ClusterId'], job['ProcId'])]
         with schedd.transaction() as txn:
-            schedd.edit(j, 'Requirements', f'"{newRequirements}"')
+            schedd.edit(j, 'Requirements', '"{}"'.format(newRequirements))
         jobs += j
 
 if cfg.release:
