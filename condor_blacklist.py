@@ -37,7 +37,7 @@ for job in schedd.xquery(projection=['ClusterId', 'ProcId', 'JobStatus', 'HoldRe
             exit(1)
         host = splits[1]
         req = job['Requirements']
-        newRequirements = '({req}) && machine != "{host}"'.format(
+        newRequirements = '{req} && (machine != "{host}")'.format(
             req=req,
             host=host)
 
@@ -45,6 +45,7 @@ for job in schedd.xquery(projection=['ClusterId', 'ProcId', 'JobStatus', 'HoldRe
             print('old requirements: {}'.format(req))
             print('new requirements: {}'.format(newRequirements))
 
+        newRequirements = newRequirements.replace('"', '\\"')
         j = ['{}.{}'.format(job['ClusterId'], job['ProcId'])]
         with schedd.transaction() as txn:
             schedd.edit(j, 'Requirements', '"{}"'.format(newRequirements))
