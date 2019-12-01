@@ -45,10 +45,9 @@ for job in schedd.xquery(projection=['ClusterId', 'ProcId', 'JobStatus', 'HoldRe
             print('old requirements: {}'.format(req))
             print('new requirements: {}'.format(newRequirements))
 
-        newRequirements = newRequirements.replace('"', '\\"')
         j = ['{}.{}'.format(job['ClusterId'], job['ProcId'])]
         with schedd.transaction() as txn:
-            schedd.edit(j, 'Requirements', '"{}"'.format(newRequirements))
+            schedd.edit(j, 'Requirements', '{}'.format(newRequirements))
         jobs += j
 
 if cfg.release:
