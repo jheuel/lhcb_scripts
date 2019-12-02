@@ -2,8 +2,13 @@
 # -*- coding: utf-8 -*-
 
 import htcondor
-from os import utime
+from os import utime, getuid
+from pwd import getpwuid
 import argparse
+
+
+def get_user_name():
+    return getpwuid(getuid()).pw_name
 
 
 def touch(fname, times=None):
@@ -28,8 +33,12 @@ statusNumbers = {
     'Submission_err': 6,
 }
 
+user = get_user_name()
+
 jobs = []
-for job in schedd.xquery(projection=['ClusterId', 'ProcId', 'JobStatus', 'HoldReason', 'LastRemoteHost', 'Requirements']):
+for job in schedd.xquery(projection=['ClusterId', 'ProcId', 'JobStatus', 'HoldReason', 'LastRemoteHost', 'Requirements', 'User']):
+    if user not in job['User']:
+        continue
     if job['JobStatus'] == statusNumbers['Held']:
         splits = job['LastRemoteHost'].split('@')
         if len(splits) != 2:
