@@ -47,7 +47,7 @@ for job in schedd.xquery(projection=['ClusterId', 'ProcId', 'JobStatus', 'HoldRe
 
         j = ['{}.{}'.format(job['ClusterId'], job['ProcId'])]
         with schedd.transaction() as txn:
-            schedd.edit(j, 'Requirements', '{}'.format(newRequirements))
+            schedd.edit(j, 'Requirements', newRequirements)
         jobs += j
 
 if cfg.release:
