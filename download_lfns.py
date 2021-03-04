@@ -2,16 +2,20 @@
 # -*- coding: utf-8 -*-
 #
 #   lb-run LHCbDIRAC/prod download_lfns.py *.lfns ./somedir
+#   DIRAC version v9r4p19 or lower has tqdm included
 
 import subprocess32 as subprocess
 from os import makedirs
-from os.path import join, isdir, isfile, basename
+from os.path import join, isdir, isfile, basename, splitext, expanduser
 from Queue import Queue
 import threading
 from time import sleep
 from warnings import warn
-from tqdm import tqdm
 import argparse
+
+import sys
+sys.path.append(expanduser('~/.local/lib/python2.7/site-packages'))
+from tqdm import tqdm
 
 
 class Job(object):
@@ -26,9 +30,10 @@ class Job(object):
         self.failed = False
         self.nJobs = len(self.lfns)
 
+        self.jobName, _ = splitext(basename(lfnfile))
         self.output_path = '{}/{}'.format(
             downloadpath,
-            basename(lfnfile).split('.')[0])
+            self.jobName)
 
         self.q = Queue()
         for ctr, path in enumerate(self.lfns):
@@ -49,6 +54,7 @@ class Job(object):
 
             self.q.put({
                 'command': 'dirac-dms-get-file {} -D {}'.format(path, filepath),
+                # 'command': 'lb-run LHCbDIRAC/prod dirac-dms-get-file {} -D {}'.format(path, filepath),
                 'retries': 3,
             })
 
@@ -57,7 +63,7 @@ class LFNDownloader(object):
     def __init__(self, lfnfiles, downloadpath, nThreads):
         self.running = True
         self.nThreads = nThreads
-        self.timeout = 15 * 60 # seconds
+        self.timeout = 30 * 60 # seconds
         self.jobs = [Job(f, downloadpath) for f in lfnfiles]
 
     def worker(self, pbar, input_q, output_q):
@@ -111,6 +117,7 @@ class LFNDownloader(object):
                 if o is self.QueueCloser:
                     output_q.task_done()
                     return
+
                 pbar.write(o)
 
                 f.write(o + '\n')
@@ -143,8 +150,7 @@ class LFNDownloader(object):
                     )
                     for i in range(self.nThreads)]
 
-                logfile = 'log_{}.txt'.format(
-                    basename(job.lfnfile).split('.')[0])
+                logfile = 'log_{}.txt'.format(job.jobName)
 
                 threads.append(
                     threading.Thread(
@@ -180,7 +186,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('lfnfile', nargs='+')
     parser.add_argument('downloadpath', help='set downloadpath')
-    parser.add_argument('-j', '--nthreads', default=10, help='set number of threads')
+    parser.add_argument('-j', '--nthreads', default=15, help='set number of threads')
     args = parser.parse_args()
 
     dl = LFNDownloader(args.lfnfile, args.downloadpath, args.nthreads)
